@@ -13,6 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r}
 # import library
 library(RMySQL)
+library(dplyr)
 
 # Connect to DB
 populationDB <- dbConnect(
@@ -22,10 +23,34 @@ populationDB <- dbConnect(
   host = '127.0.0.1',
   dbname = 'Population'
   )
+```
 
+```{r}
 dbSendQuery(populationDB, 'set character set "utf8"'
   )
+```
 
+```{r}
+# import csv file and convert to dataframe format 
+count_csv <- read.csv("countries.csv")
+count_df <- as.data.frame(count_csv)
+```
 
+```{r}
+# identifier name too long, data cleaning process
+count_df <- count_df %>%
+  select(-url) %>%
+  select(-Introduction..Background) %>%
+  select(-starts_with('Government..')) %>%
+  select(-starts_with('Communications..')) %>%
+  select(-starts_with('Environment')) %>%
+  select(-starts_with('Household'))
+
+names(count_df) <- gsub(pattern = "^.*?\\.\\.", replacement = "", x = names(count_df))
+```
+
+```{r}
+dbSendQuery(populationDB, "SET GLOBAL local_infile = TRUE;")
+dbWriteTable(populationDB, "Population", count_df)
 ```
 
